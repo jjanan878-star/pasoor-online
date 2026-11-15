@@ -1,6 +1,53 @@
 // سرور آنلاین پاسور ۳۵۰ - مچ‌میکینگ تصادفی ۴ نفره
 // هر ۴ نفری که وارد صف شوند یک اتاق می‌سازند. صندلی ۰ و ۲ هم‌تیمی‌اند، ۱ و ۳ هم‌تیمی.
 
+const TEST_PAGE = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تست سرور پاسور</title>
+<style>
+  body { font-family: sans-serif; padding: 14px; background: #1b2a1f; color: #fff; }
+  input, button { font-size: 16px; padding: 10px; margin: 4px 0; width: 100%; box-sizing: border-box; border-radius: 8px; border: 0; }
+  button { background: #e0a526; font-weight: bold; }
+  #log { background: #000; color: #8f8; padding: 8px; height: 260px; overflow: auto; font-size: 13px; direction: ltr; text-align: left; border-radius: 8px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h3>تست سرور پاسور ۳۵۰</h3>
+<input id="name" placeholder="نام شما">
+<button onclick="connect()">اتصال و ورود به صف</button>
+<button onclick="sendTest()">ارسال پیام تست به بقیه</button>
+<div id="log"></div>
+<script>
+  var ws = null;
+  var logEl = document.getElementById('log');
+  function log(t) { logEl.textContent += t + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+  function connect() {
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var u = proto + location.host + '/ws';
+    if (ws) { try { ws.close(); } catch (e) {} }
+    log('در حال اتصال به ' + u);
+    ws = new WebSocket(u);
+    ws.onopen = function () {
+      log('وصل شد ✅');
+      ws.send(JSON.stringify({ type: 'join', name: document.getElementById('name').value || 'بازیکن' }));
+    };
+    ws.onmessage = function (e) { log('← ' + e.data); };
+    ws.onclose = function () { log('اتصال قطع شد'); };
+    ws.onerror = function () { log('خطا در اتصال ❌'); };
+  }
+  function sendTest() {
+    if (!ws || ws.readyState !== 1) { log('وصل نیستید'); return; }
+    ws.send(JSON.stringify({ type: 'msg', data: { hello: 'سلام', t: Date.now() } }));
+    log('→ پیام تست فرستاده شد');
+  }
+</script>
+</body>
+</html>
+`;
+
 export class Lobby {
   constructor(state, env) {
     this.queue = [];
@@ -109,6 +156,11 @@ export default {
     if (url.pathname === "/ws") {
       const id = env.LOBBY.idFromName("main");
       return env.LOBBY.get(id).fetch(request);
+    }
+    if (url.pathname === "/test") {
+      return new Response(TEST_PAGE, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
     }
     return new Response("Pasoor online server OK", {
       headers: { "content-type": "text/plain; charset=utf-8" },
