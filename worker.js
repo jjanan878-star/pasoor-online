@@ -23,7 +23,7 @@ const TEST_PAGE = `<!DOCTYPE html>
 <script>
   var ws = null;
   var logEl = document.getElementById('log');
-  function log(t) { logEl.textContent += t + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+  function log(t) { logEl.textContent += t + String.fromCharCode(10); logEl.scrollTop = logEl.scrollHeight; }
   function connect() {
     var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
     var u = proto + location.host + '/ws';
